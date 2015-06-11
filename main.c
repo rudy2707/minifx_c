@@ -55,7 +55,7 @@ struct __attribute__ ((__packed__)) request_t {
     uint32_t type;
     uint32_t handle;
     uint32_t offset;
-    int length;
+    uint32_t length;
     char payload[MAX_BUFFER];
 };
 
@@ -164,6 +164,9 @@ void initServer() {
         perror("Error to accept connexion");
         exit(1);
     }
+
+    request = malloc(sizeof(struct reponse_t));
+    response = malloc(sizeof(struct response_t));
 
 }
 
