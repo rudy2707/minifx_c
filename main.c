@@ -10,9 +10,18 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <sys/fcntl.h>
 
-#define PORT_NUM 2401
+#define MAGIC_REQUEST 0x76767676
+#define MAGIC_RESPONSE 0x87878787
+
+#define CMD_READ 0x0
+#define CMD_WRITE 0x1
+
+#define PORT_NUM 2404
 #define MAX_BUFFER 1024
+#define DATA_MAX_REQ 1036
+#define DATA_MAX_REP 16
 #define MAX_CONNECTION 1
 
 /*
@@ -57,15 +66,20 @@ struct __attribute__ ((__packed__)) response_t {
     char payload[MAX_BUFFER];
 };
 
+struct request_t* request;
+struct response_t* response;
+char bufferRead[MAX_BUFFER];
+char buffer[MAX_BUFFER];
+
 int mySocket;               // socket used to listen for incoming connections
 int conSocket;
 
 void initServer();
 
-int readBuffer(char* buffer, struct request_t* request);
-int readMinix(struct request_t* request, char* bufferRead, char* arg);
-int WriteMinix(struct request_t* request, char * arg);
-int requestResult(struct request_t* request, struct response_t* response, char* bufferRead);
+int readBuffer(char* buffer);
+int readMinix(char* arg);
+int WriteMinix(char * arg);
+int requestResult(char* bufferRead);
 
 /*
 struct msg_aligned {
@@ -77,12 +91,6 @@ struct msg_aligned {
 };
 */
 int main (int argc, char** argv) {
-    struct request_t* requete;
-    struct response_t* reponse;
-
-    char bufferRead[MAX_BUFFER];
-    char buffer[MAX_BUFFER];
-
     int nRead;
     int errorReturn;
 
@@ -94,28 +102,29 @@ int main (int argc, char** argv) {
             perror("Error to read");
         }
 
-        readBuffer(buffer, requete);
+        //readBuffer(buffer, request);
+        printf("message recu %s", buffer);
 
-        switch (requete->type) {
-            case 0x0 :
-                if ((errorReturn = readMinix(requete, bufferRead, argv[1])) != 0)
-                    reponse->error = -errorReturn;
-                reponse->error = 0;
-                requestResult(requete, reponse, bufferRead);
+        switch (request->type) {
+            case CMD_READ :
+                if ((errorReturn = readMinix(argv[1])) != 0)
+                    response->error = -errorReturn;
+                response->error = 0;
+                //readMinix(argv[1]);
+                requestResult(bufferRead);
                 break;
-            case 0x1 :
-                if ((errorReturn = WriteMinix(requete, argv[1])) != 0)
-                    reponse->error = -errorReturn;
-                reponse->error = 0;
-                requestResult(requete, reponse, NULL);
-                break;
+            case CMD_WRITE :
+                if ((errorReturn = WriteMinix(argv[1])) != 0)
+                    response->error = -errorReturn;
+                response->error = 0;
+                requestResult(NULL);
                 break;
             default:
                 perror("Unknow mode. Read or Write nor found");
                 break;
         }
 
-        if ((write(conSocket, reponse, sizeof(struct response_t))) < 0) {
+        if ((write(conSocket, response, sizeof(struct response_t))) < 0) {
             perror("Error to write into the socket");
             exit(1);
         }
@@ -158,19 +167,56 @@ void initServer() {
 
 }
 
-int readBuffer(char* buffer, struct request_t* request) {
+int readBuffer(char* buffer) {
+    //request = (struct request_t *)buffer;
+
     return EXIT_SUCCESS;
 }
 
-int readMinix(struct request_t* request, char* bufferRead, char* arg) {
+int readMinix(char* arg) {
+    //request = (struct request_t *)buffer;
+
+    int i;
+    //on aloue de la memoire pour la reponse on sait de combien on va lire
+    //reponse = malloc(sizeof(struct reponse_t));
+    //aloue la memoire pour la tableau structure
+    //reponse->payload = malloc( sizeof(char)*length);
+
+    //ouverture du fichier
+    int fichier = open(arg, O_RDONLY);
+
+    //on se positionne a la position de l'offset avec le curseur
+    lseek(fichier,request->offset,SEEK_SET);
+    // On lis le nombre de byte voulu du fichier
+    read(fichier,response->payload,request->length);
+
+    //Initialisation des champs
+    response->magic = MAGIC_RESPONSE;
+    response->error=0;
+    response->handle = request->handle;
+
     return EXIT_SUCCESS;
 }
 
-int WriteMinix(struct request_t* request, char * arg){
+int WriteMinix(char * arg){
+    //on aloue de la memoire pour la reponse on sait de combien on va lire
+    //reponse = malloc(sizeof(struct reponse_t));
+
+    //ouverture du fichier
+    int fichier = open(arg, O_WRONLY);
+    //on se positionne a la position de l'offset avec le curseur
+    lseek(fichier,request->offset,SEEK_SET);
+    // On écris le nombre de byte voulu dans le fichier
+    write(fichier,request->payload,request->length);
+    //initialisation des champs
+    response->magic = MAGIC_RESPONSE;
+    response->error=0;
+    response->handle = request->handle;
+
     return EXIT_SUCCESS;
 }
 
-int requestResult(struct request_t* request, struct response_t* response, char* bufferRead) {
+int requestResult(char* bufferRead) {
     return EXIT_SUCCESS;
 }
 
