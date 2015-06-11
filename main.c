@@ -198,6 +198,8 @@ int readMinix(char* arg) {
     response->error=0;
     response->handle = request->handle;
 
+    close(fichier);
+
     return EXIT_SUCCESS;
 }
 
@@ -215,6 +217,8 @@ int WriteMinix(char * arg){
     response->magic = MAGIC_RESPONSE;
     response->error=0;
     response->handle = request->handle;
+
+    close(fichier);
 
     return EXIT_SUCCESS;
 }
