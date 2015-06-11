@@ -18,7 +18,7 @@
 #define CMD_READ 0x0
 #define CMD_WRITE 0x1
 
-#define PORT_NUM 2404
+#define PORT_NUM 2412
 #define MAX_BUFFER 1024
 #define DATA_MAX_REQ 1036
 #define DATA_MAX_REP 16
@@ -101,29 +101,31 @@ int main (int argc, char** argv) {
         if ((nRead = recv(conSocket, buffer, MAX_BUFFER, 0)) < 0) {
             perror("Error to read");
         }
+        // Copy the content of the buffer to the request structure
+        request = (struct request_t*)buffer;
 
         //readBuffer(buffer, request);
         printf("message recu %s", buffer);
-
-        switch (request->type) {
-            case CMD_READ :
-                if ((errorReturn = readMinix(argv[1])) != 0)
-                    response->error = -errorReturn;
-                response->error = 0;
-                //readMinix(argv[1]);
-                requestResult(bufferRead);
-                break;
-            case CMD_WRITE :
-                if ((errorReturn = WriteMinix(argv[1])) != 0)
-                    response->error = -errorReturn;
-                response->error = 0;
-                requestResult(NULL);
-                break;
-            default:
-                perror("Unknow mode. Read or Write nor found");
-                break;
+        if (request->magic == MAGIC_REQUEST) {
+            switch (request->type) {
+                case CMD_READ :
+                    if ((errorReturn = readMinix(argv[1])) != 0)
+                        response->error = -errorReturn;
+                    response->error = 0;
+                    //readMinix(argv[1]);
+                    requestResult(bufferRead);
+                    break;
+                case CMD_WRITE :
+                    if ((errorReturn = WriteMinix(argv[1])) != 0)
+                        response->error = -errorReturn;
+                    response->error = 0;
+                    requestResult(NULL);
+                    break;
+                default:
+                    perror("Unknow mode. Read or Write nor found");
+                    break;
+            }
         }
-
         if ((write(conSocket, response, sizeof(struct response_t))) < 0) {
             perror("Error to write into the socket");
             exit(1);
@@ -165,7 +167,7 @@ void initServer() {
         exit(1);
     }
 
-    request = malloc(sizeof(struct reponse_t));
+    request = malloc(sizeof(struct request_t));
     response = malloc(sizeof(struct response_t));
 
 }
