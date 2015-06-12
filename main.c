@@ -1,5 +1,5 @@
 //
-// Created by Rudolf HÖHN on 22.05.15.
+// Created by Rudolf HÖHN and Rafael Martins Gomes on 22.05.15.
 //
 
 #include <stdio.h>
@@ -15,13 +15,11 @@
 #define CMD_READ 0x0
 #define CMD_WRITE 0x1
 
-#define PORT_NUM 2411
-#define MAX_BUFFER 1024
-#define MAX_REQ 1036
+#define PORT_NUM 2410
+#define MAX_BUFFER (1024*5)
+#define MAX_REQ 1044
 #define MAX_RESP 16
 #define MAX_CONNECTION 1
-
-//#define FILE_NAME "minixfs_lab1.img"
 
 /*
 * struct request_t est déclarée pour être compilée en
